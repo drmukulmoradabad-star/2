@@ -1,10 +1,12 @@
-import { Suspense, useRef, useState, useEffect, Component } from "react";
+import { Suspense, useRef, useState, Component } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, GizmoHelper, GizmoViewport } from "@react-three/drei";
 import { useViewerStore } from "@/store/viewerStore";
+import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import ScanMesh from "./ScanMesh";
 import ViewControls from "./ViewControls";
 import DropZone from "./DropZone";
+import SegmentedScene from "@/modules/segmentation/SegmentedScene";
 
 class WebGLErrorBoundary extends Component<
   { children: React.ReactNode; onError: () => void },
@@ -51,6 +53,8 @@ function Scene() {
   const geometry = useViewerStore((s) => s.geometry);
   const materialMode = useViewerStore((s) => s.materialMode);
   const opacity = useViewerStore((s) => s.opacity);
+  const showSegmented = useSegmentationStore((s) => s.showSegmented);
+  const hasSegments = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
 
   return (
     <>
@@ -58,11 +62,14 @@ function Scene() {
       <directionalLight position={[5, 8, 4]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
       <directionalLight position={[-4, 2, -2]} intensity={0.4} color="#c8d8f0" />
       <pointLight position={[0, -3, 4]} intensity={0.6} color="#fff0d0" />
-      {geometry ? (
+
+      {/* Raw scan mesh — hide when showing segmented view */}
+      {geometry && (!showSegmented || !hasSegments) && (
         <ScanMesh geometry={geometry} materialMode={materialMode} opacity={opacity} />
-      ) : (
-        <EmptyScene />
       )}
+
+      {/* Segmented individual tooth meshes */}
+      <SegmentedScene />
     </>
   );
 }
@@ -130,6 +137,10 @@ interface ViewportCanvasProps {
 export default function ViewportCanvas({ onFileLoad }: ViewportCanvasProps) {
   const controlsRef = useRef<any>(null);
   const [webGLFailed, setWebGLFailed] = useState(() => !checkWebGL());
+  const activeTool = useViewerStore((s) => s.activeTool);
+
+  // Disable orbit when movement gizmo needs mouse
+  const orbitEnabled = activeTool !== "align";
 
   return (
     <div className="relative w-full h-full" style={{ background: "#0a0c10" }}>
@@ -155,6 +166,7 @@ export default function ViewportCanvas({ onFileLoad }: ViewportCanvasProps) {
             <PerspectiveCamera makeDefault position={[0, 0, 8]} fov={45} near={0.01} far={1000} />
             <OrbitControls
               ref={controlsRef}
+              enabled={orbitEnabled}
               enableDamping
               dampingFactor={0.05}
               screenSpacePanning={false}

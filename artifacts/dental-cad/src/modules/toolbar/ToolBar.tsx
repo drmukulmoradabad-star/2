@@ -64,21 +64,21 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: React.ReactN
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
         <rect x="2" y="2" width="5" height="5" rx="1" opacity="0.7" />
-        <rect x="9" y="2" width="5" height="5" rx="1" opacity="0.4" />
-        <rect x="2" y="9" width="5" height="5" rx="1" opacity="0.4" />
-        <rect x="9" y="9" width="5" height="5" rx="1" opacity="0.7" />
+        <rect x="9" y="2" width="5" height="5" rx="1" opacity="0.4" fill="#00c8ff" />
+        <rect x="2" y="9" width="5" height="5" rx="1" opacity="0.4" fill="#4dffb8" />
+        <rect x="9" y="9" width="5" height="5" rx="1" opacity="0.7" fill="#ffcc00" />
       </svg>
     ),
   },
   {
     id: "align",
-    label: "Alignment",
-    shortcut: "G",
+    label: "Tooth Movement",
+    shortcut: "M",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-        <line x1="8" y1="1" x2="8" y2="15" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="8" cy="8" r="2" />
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="5" y="5" width="6" height="6" rx="1" />
+        <path d="M8 2 L8 4M8 12 L8 14M2 8 L4 8M12 8 L14 8" strokeLinecap="round" />
+        <path d="M8 2 L7 3.5M8 2 L9 3.5" fill="currentColor" />
       </svg>
     ),
   },
@@ -96,9 +96,18 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: React.ReactN
   },
 ];
 
-export default function ToolBar() {
+interface ToolBarProps {
+  onToolChange?: (tool: ToolType) => void;
+}
+
+export default function ToolBar({ onToolChange }: ToolBarProps) {
   const activeTool = useViewerStore((s) => s.activeTool);
   const setActiveTool = useViewerStore((s) => s.setActiveTool);
+
+  const handleToolClick = (tool: ToolType) => {
+    setActiveTool(tool);
+    onToolChange?.(tool);
+  };
 
   return (
     <div
@@ -116,7 +125,7 @@ export default function ToolBar() {
           <Tooltip key={tool.id} delayDuration={400}>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setActiveTool(tool.id)}
+                onClick={() => handleToolClick(tool.id)}
                 className="relative w-9 h-9 flex items-center justify-center rounded transition-all duration-150"
                 style={{
                   background: isActive ? "rgba(0,229,255,0.15)" : "transparent",

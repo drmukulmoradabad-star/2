@@ -1,12 +1,17 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useViewerStore } from "@/store/viewerStore";
-import { useGetScan, useGetScanStats, useListScans, useUploadScan, useExportScan, getListScansQueryKey } from "@workspace/api-client-react";
+import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
+import { useMovementStore } from "@/modules/movement/movementStore";
+import { useGetScan, getGetScanQueryKey, useListScans, useUploadScan, useExportScan, getListScansQueryKey } from "@workspace/api-client-react";
 import { loadScanFile } from "@/modules/loader/ScanLoader";
+import { segmentMesh } from "@/modules/segmentation/SegmentationEngine";
 import ViewportCanvas from "@/modules/renderer/ViewportCanvas";
 import ToolBar from "@/modules/toolbar/ToolBar";
 import MeasurementPanel from "@/modules/measurements/MeasurementPanel";
 import AnnotationPanel from "@/modules/annotations/AnnotationPanel";
+import SegmentationPanel from "@/modules/segmentation/SegmentationPanel";
+import MovementPanel from "@/modules/movement/MovementPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -30,16 +35,21 @@ export default function Viewer() {
     materialMode, setMaterialMode,
     opacity, setOpacity,
     setGeometry, setActiveScanId,
-    activeTool,
+    activeTool, setActiveTool,
   } = useViewerStore();
 
+  const { setResult, syncMetasFromSegments, setShowSegmented, clearResult } = useSegmentationStore();
+  const { initTransform } = useMovementStore();
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isSegmenting, setIsSegmenting] = useState(false);
   const [showScanList, setShowScanList] = useState(false);
+  const [activeTab, setActiveTab] = useState("properties");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data: activeScan } = useGetScan(activeScanId ?? 0, {
-    query: { enabled: !!activeScanId },
+    query: { enabled: !!activeScanId, queryKey: getGetScanQueryKey(activeScanId ?? 0) },
   });
 
   const { data: scans = [] } = useListScans();
@@ -48,6 +58,7 @@ export default function Viewer() {
 
   const handleFileLoad = useCallback(async (file: File) => {
     setIsLoading(true);
+    clearResult();
     try {
       const geo = await loadScanFile(file);
       setGeometry(geo);
@@ -75,6 +86,36 @@ export default function Viewer() {
       setIsLoading(false);
     }
   }, []);
+
+  const handleRunSegmentation = useCallback(async (opts: { angleThreshold: number; minFaces: number }) => {
+    if (!geometry) {
+      toast({ title: "No scan loaded", description: "Load a scan file first", variant: "destructive" });
+      return;
+    }
+    setIsSegmenting(true);
+    try {
+      // Run in next tick to allow UI to update
+      await new Promise((r) => setTimeout(r, 20));
+      const result = segmentMesh(geometry, {
+        angleThresholdDeg: opts.angleThreshold,
+        minFaceCount: opts.minFaces,
+        maxSegments: 32,
+      });
+      setResult(result);
+      syncMetasFromSegments(result.segments);
+      // Initialize movement transforms for each segment
+      for (const seg of result.segments) initTransform(seg.id);
+      setShowSegmented(true);
+      toast({
+        title: `Segmentation complete`,
+        description: `${result.segments.length} tooth segment${result.segments.length !== 1 ? "s" : ""} detected`,
+      });
+    } catch (err) {
+      toast({ title: "Segmentation failed", variant: "destructive" });
+    } finally {
+      setIsSegmenting(false);
+    }
+  }, [geometry]);
 
   const handleExport = useCallback(() => {
     if (!activeScanId || !activeScan) return;
@@ -217,17 +258,24 @@ export default function Viewer() {
       {/* MAIN CONTENT */}
       <div className="flex flex-1 min-h-0">
         {/* LEFT TOOLBAR */}
-        <ToolBar />
+        <ToolBar onToolChange={(tool) => {
+          setActiveTool(tool);
+          // Auto-switch right panel when selecting segment/align tool
+          if (tool === "segment") setActiveTab("segment");
+          if (tool === "align") setActiveTab("movement");
+        }} />
 
         {/* VIEWPORT */}
         <div className="flex-1 relative min-w-0">
           <ViewportCanvas onFileLoad={handleFileLoad} />
 
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(10,12,16,0.7)", zIndex: 20 }}>
+          {(isLoading || isSegmenting) && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(10,12,16,0.75)", zIndex: 20 }}>
               <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,229,255,0.2)", borderTopColor: "#00e5ff" }} />
-                <p className="text-xs tracking-widest uppercase" style={{ color: "#00e5ff" }}>Processing Mesh</p>
+                <p className="text-xs tracking-widest uppercase" style={{ color: "#00e5ff" }}>
+                  {isSegmenting ? "Detecting Teeth..." : "Processing Mesh"}
+                </p>
               </div>
             </div>
           )}
@@ -253,6 +301,7 @@ export default function Viewer() {
                     onClick={async () => {
                       setActiveScanId(scan.id);
                       setShowScanList(false);
+                      clearResult();
                       try {
                         const res = await fetch(`/api/scans/${scan.id}/file`);
                         const buffer = await res.arrayBuffer();
@@ -281,21 +330,27 @@ export default function Viewer() {
         {/* RIGHT PANEL */}
         <div
           className="flex flex-col shrink-0"
-          style={{ width: 240, background: "#0e1117", borderLeft: "1px solid #1e2530" }}
+          style={{ width: 256, background: "#0e1117", borderLeft: "1px solid #1e2530" }}
         >
-          <Tabs defaultValue="properties" className="flex flex-col h-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <TabsList
-              className="shrink-0 rounded-none border-b grid grid-cols-3 h-8 p-0"
+              className="shrink-0 rounded-none border-b grid grid-cols-5 h-8 p-0"
               style={{ background: "#0a0c10", borderColor: "#1e2530" }}
             >
-              {["properties", "measures", "notes"].map((tab) => (
+              {[
+                { value: "properties", label: "Props" },
+                { value: "measures", label: "Meas." },
+                { value: "notes", label: "Annot." },
+                { value: "segment", label: "Seg." },
+                { value: "movement", label: "Move" },
+              ].map((tab) => (
                 <TabsTrigger
-                  key={tab}
-                  value={tab}
-                  className="text-[10px] uppercase tracking-wider rounded-none h-8 data-[state=active]:bg-transparent"
+                  key={tab.value}
+                  value={tab.value}
+                  className="text-[9px] uppercase tracking-wider rounded-none h-8 data-[state=active]:bg-transparent px-0"
                   style={{ color: "#4a6070" }}
                 >
-                  {tab === "properties" ? "Props" : tab === "measures" ? "Meas." : "Annot."}
+                  {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -308,6 +363,15 @@ export default function Viewer() {
             </TabsContent>
             <TabsContent value="notes" className="flex-1 overflow-y-auto p-0 m-0">
               <AnnotationPanel />
+            </TabsContent>
+            <TabsContent value="segment" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <SegmentationPanel
+                onRunSegmentation={handleRunSegmentation}
+                isRunning={isSegmenting}
+              />
+            </TabsContent>
+            <TabsContent value="movement" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <MovementPanel />
             </TabsContent>
           </Tabs>
         </div>
@@ -341,7 +405,7 @@ export default function Viewer() {
         <div className="ml-auto flex items-center gap-3">
           <span style={{ color: "#1e2a33" }}>GPU: WebGL 2.0</span>
           <span style={{ color: activeTool !== "orbit" ? "#00e5ff" : "#1e2a33", textTransform: "capitalize" }}>
-            Tool: {activeTool.replace("_", " ")}
+            Tool: {activeTool.replace(/_/g, " ")}
           </span>
         </div>
       </div>
@@ -381,7 +445,7 @@ function PropertiesPanel({ scan, activeTool }: { scan: any; activeTool: string }
           <div key={label} className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #13161d" }}>
             <span className="text-[10px]" style={{ color: "#3a5060" }}>{label}</span>
             <span className="text-[11px]" style={{ color: "#7fa8c0", textTransform: capitalize ? "capitalize" : undefined }}>
-              {value}
+              {String(value)}
             </span>
           </div>
         ))}
