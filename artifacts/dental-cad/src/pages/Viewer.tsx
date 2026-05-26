@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useViewerStore } from "@/store/viewerStore";
 import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import { useMovementStore } from "@/modules/movement/movementStore";
+import { useSimulationStore } from "@/modules/simulation/simulationStore";
 import { useGetScan, getGetScanQueryKey, useListScans, useUploadScan, useExportScan, getListScansQueryKey } from "@workspace/api-client-react";
 import { loadScanFile } from "@/modules/loader/ScanLoader";
 import { segmentMesh } from "@/modules/segmentation/SegmentationEngine";
@@ -12,6 +13,8 @@ import MeasurementPanel from "@/modules/measurements/MeasurementPanel";
 import AnnotationPanel from "@/modules/annotations/AnnotationPanel";
 import SegmentationPanel from "@/modules/segmentation/SegmentationPanel";
 import MovementPanel from "@/modules/movement/MovementPanel";
+import TreatmentPanel from "@/modules/simulation/TreatmentPanel";
+import AnalysisPanel from "@/modules/analysis/AnalysisPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +43,7 @@ export default function Viewer() {
 
   const { setResult, syncMetasFromSegments, setShowSegmented, clearResult } = useSegmentationStore();
   const { initTransform } = useMovementStore();
+  const { setShowSimulation } = useSimulationStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSegmenting, setIsSegmenting] = useState(false);
@@ -334,20 +338,22 @@ export default function Viewer() {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <TabsList
-              className="shrink-0 rounded-none border-b grid grid-cols-5 h-8 p-0"
+              className="shrink-0 rounded-none border-b grid grid-cols-7 h-8 p-0"
               style={{ background: "#0a0c10", borderColor: "#1e2530" }}
             >
               {[
-                { value: "properties", label: "Props" },
-                { value: "measures", label: "Meas." },
-                { value: "notes", label: "Annot." },
-                { value: "segment", label: "Seg." },
-                { value: "movement", label: "Move" },
+                { value: "properties", label: "Prop" },
+                { value: "measures", label: "Meas" },
+                { value: "notes", label: "Ann" },
+                { value: "segment", label: "Seg" },
+                { value: "movement", label: "Mov" },
+                { value: "simulation", label: "Sim" },
+                { value: "analysis", label: "Anl" },
               ].map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="text-[9px] uppercase tracking-wider rounded-none h-8 data-[state=active]:bg-transparent px-0"
+                  className="text-[8px] uppercase tracking-wider rounded-none h-8 data-[state=active]:bg-transparent px-0"
                   style={{ color: "#4a6070" }}
                 >
                   {tab.label}
@@ -372,6 +378,14 @@ export default function Viewer() {
             </TabsContent>
             <TabsContent value="movement" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
               <MovementPanel />
+            </TabsContent>
+            <TabsContent value="simulation" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <TreatmentPanel
+                onToast={(msg, desc) => toast({ title: msg, description: desc })}
+              />
+            </TabsContent>
+            <TabsContent value="analysis" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <AnalysisPanel />
             </TabsContent>
           </Tabs>
         </div>

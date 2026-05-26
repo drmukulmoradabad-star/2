@@ -3,10 +3,13 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, GizmoHelper, GizmoViewport } from "@react-three/drei";
 import { useViewerStore } from "@/store/viewerStore";
 import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
+import { useSimulationStore } from "@/modules/simulation/simulationStore";
 import ScanMesh from "./ScanMesh";
 import ViewControls from "./ViewControls";
 import DropZone from "./DropZone";
 import SegmentedScene from "@/modules/segmentation/SegmentedScene";
+import SimulatedScene from "@/modules/simulation/SimulatedScene";
+import MeasurementScene from "@/modules/analysis/MeasurementScene";
 
 class WebGLErrorBoundary extends Component<
   { children: React.ReactNode; onError: () => void },
@@ -55,6 +58,10 @@ function Scene() {
   const opacity = useViewerStore((s) => s.opacity);
   const showSegmented = useSegmentationStore((s) => s.showSegmented);
   const hasSegments = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
+  const showSimulation = useSimulationStore((s) => s.showSimulation);
+
+  // Hide raw mesh when segmented or simulation view is active
+  const showRaw = geometry && (!showSegmented || !hasSegments) && !showSimulation;
 
   return (
     <>
@@ -63,13 +70,19 @@ function Scene() {
       <directionalLight position={[-4, 2, -2]} intensity={0.4} color="#c8d8f0" />
       <pointLight position={[0, -3, 4]} intensity={0.6} color="#fff0d0" />
 
-      {/* Raw scan mesh — hide when showing segmented view */}
-      {geometry && (!showSegmented || !hasSegments) && (
+      {/* Raw scan mesh */}
+      {showRaw && (
         <ScanMesh geometry={geometry} materialMode={materialMode} opacity={opacity} />
       )}
 
-      {/* Segmented individual tooth meshes */}
-      <SegmentedScene />
+      {/* Segmented tooth meshes (hidden during simulation) */}
+      {!showSimulation && <SegmentedScene />}
+
+      {/* Orthodontic simulation — animated interpolation */}
+      <SimulatedScene />
+
+      {/* Measurement points, lines, and labels */}
+      <MeasurementScene />
     </>
   );
 }
