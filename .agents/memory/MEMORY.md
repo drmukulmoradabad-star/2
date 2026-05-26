@@ -1,0 +1,4 @@
+- [Wouter v3 navigation](wouter-v3-nav.md) — use useLocation() not useNavigate() for programmatic navigation
+- [API-zod DOM types](api-zod-dom-types.md) — add "lib": ["esnext", "dom"] to lib/api-zod/tsconfig.json when spec uses multipart/binary fields
+- [Stats route ordering](stats-route-order.md) — register /scans/stats BEFORE /scans/:id to avoid param matcher conflict
+- [WebGL in Replit preview](webgl-replit.md) — WebGL unavailable in sandboxed preview; always add graceful fallback with checkWebGL() + ErrorBoundary

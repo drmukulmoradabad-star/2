@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Dental CAD Studio API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: scans
+    description: Intraoral scan file management
+  - name: measurements
+    description: Measurement tools
+  - name: annotations
+    description: Annotation system
+  - name: exports
+    description: STL/mesh export operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,299 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /scans:
+    get:
+      operationId: listScans
+      tags: [scans]
+      summary: List all scans
+      responses:
+        "200":
+          description: List of scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scan"
+    post:
+      operationId: uploadScan
+      tags: [scans]
+      summary: Upload a scan file (STL, OBJ, PLY)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ScanUpload"
+      responses:
+        "201":
+          description: Scan uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "400":
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans/{id}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get a scan by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateScan
+      tags: [scans]
+      summary: Update scan metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanUpdate"
+      responses:
+        "200":
+          description: Updated scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+    delete:
+      operationId: deleteScan
+      tags: [scans]
+      summary: Delete a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /scans/{id}/file:
+    get:
+      operationId: getScanFile
+      tags: [scans]
+      summary: Download the raw scan file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Raw mesh file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /scans/stats:
+    get:
+      operationId: getScanStats
+      tags: [scans]
+      summary: Get aggregate scan statistics
+      responses:
+        "200":
+          description: Scan statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanStats"
+
+  /scans/{id}/measurements:
+    get:
+      operationId: listMeasurements
+      tags: [measurements]
+      summary: List measurements for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Measurements list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Measurement"
+    post:
+      operationId: createMeasurement
+      tags: [measurements]
+      summary: Create a measurement on a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementInput"
+      responses:
+        "201":
+          description: Created measurement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measurement"
+
+  /scans/{scanId}/measurements/{measurementId}:
+    delete:
+      operationId: deleteMeasurement
+      tags: [measurements]
+      summary: Delete a measurement
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: measurementId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /scans/{id}/annotations:
+    get:
+      operationId: listAnnotations
+      tags: [annotations]
+      summary: List annotations for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Annotations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Annotation"
+    post:
+      operationId: createAnnotation
+      tags: [annotations]
+      summary: Create an annotation on a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnotationInput"
+      responses:
+        "201":
+          description: Created annotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Annotation"
+
+  /scans/{scanId}/annotations/{annotationId}:
+    delete:
+      operationId: deleteAnnotation
+      tags: [annotations]
+      summary: Delete an annotation
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: annotationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /scans/{id}/export:
+    post:
+      operationId: exportScan
+      tags: [exports]
+      summary: Export a scan in specified format
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportOptions"
+      responses:
+        "200":
+          description: Exported file binary
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Export error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +335,191 @@ components:
       required:
         - status
 
+    Scan:
+      type: object
+      required: [id, name, fileFormat, filePath, fileSize, vertexCount, triangleCount, uploadedAt, jaw]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        fileFormat:
+          type: string
+          enum: [stl, obj, ply]
+        filePath:
+          type: string
+        fileSize:
+          type: integer
+        vertexCount:
+          type: integer
+        triangleCount:
+          type: integer
+        jaw:
+          type: string
+          enum: [upper, lower, both, unknown]
+        patientId:
+          type: ["string", "null"]
+        scannerModel:
+          type: ["string", "null"]
+        uploadedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ScanUpload:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+        name:
+          type: string
+        description:
+          type: string
+        jaw:
+          type: string
+          enum: [upper, lower, both, unknown]
+        patientId:
+          type: string
+        scannerModel:
+          type: string
+
+    ScanUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        jaw:
+          type: string
+          enum: [upper, lower, both, unknown]
+        patientId:
+          type: string
+        scannerModel:
+          type: string
+
+    ScanStats:
+      type: object
+      required: [totalScans, totalFileSize, avgVertexCount, avgTriangleCount, formatBreakdown, jawBreakdown]
+      properties:
+        totalScans:
+          type: integer
+        totalFileSize:
+          type: integer
+        avgVertexCount:
+          type: integer
+        avgTriangleCount:
+          type: integer
+        formatBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        jawBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+
+    Measurement:
+      type: object
+      required: [id, scanId, type, label, value, unit, createdAt]
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        type:
+          type: string
+          enum: [distance, angle, area, perimeter, depth]
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        pointA:
+          type: ["string", "null"]
+        pointB:
+          type: ["string", "null"]
+        pointC:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    MeasurementInput:
+      type: object
+      required: [type, label, value, unit]
+      properties:
+        type:
+          type: string
+          enum: [distance, angle, area, perimeter, depth]
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        pointA:
+          type: string
+        pointB:
+          type: string
+        pointC:
+          type: string
+
+    Annotation:
+      type: object
+      required: [id, scanId, label, position, color, createdAt]
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        label:
+          type: string
+        notes:
+          type: ["string", "null"]
+        position:
+          type: string
+        color:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AnnotationInput:
+      type: object
+      required: [label, position, color]
+      properties:
+        label:
+          type: string
+        notes:
+          type: string
+        position:
+          type: string
+        color:
+          type: string
+
+    ExportOptions:
+      type: object
+      required: [format]
+      properties:
+        format:
+          type: string
+          enum: [stl, obj, ply]
+        binary:
+          type: boolean
+        includeAnnotations:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

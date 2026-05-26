@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Dental CAD Studio"
+version = "1.0.0"
+id = "artifacts/dental-cad"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20814
+
+[services.development]
+run = "pnpm --filter @workspace/dental-cad run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dental-cad", "run", "build" ]
+publicDir = "artifacts/dental-cad/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20814"
+BASE_PATH = "/"
