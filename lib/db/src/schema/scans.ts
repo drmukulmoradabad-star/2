@@ -6,6 +6,24 @@ export const fileFormatEnum = pgEnum("file_format", ["stl", "obj", "ply"]);
 export const jawEnum = pgEnum("jaw_type", ["upper", "lower", "both", "unknown"]);
 export const measurementTypeEnum = pgEnum("measurement_type", ["distance", "angle", "area", "perimeter", "depth"]);
 
+export const patientsTable = pgTable("patients", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  dateOfBirth: text("date_of_birth"),
+  gender: text("gender"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  caseNotes: text("case_notes"),
+  referringDentist: text("referring_dentist"),
+  treatmentPlan: text("treatment_plan"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPatientSchema = createInsertSchema(patientsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPatient = z.infer<typeof insertPatientSchema>;
+export type Patient = typeof patientsTable.$inferSelect;
+
 export const scansTable = pgTable("scans", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -17,6 +35,7 @@ export const scansTable = pgTable("scans", {
   triangleCount: integer("triangle_count").notNull().default(0),
   jaw: jawEnum("jaw").notNull().default("unknown"),
   patientId: text("patient_id"),
+  patientDbId: integer("patient_db_id").references(() => patientsTable.id, { onDelete: "set null" }),
   scannerModel: text("scanner_model"),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

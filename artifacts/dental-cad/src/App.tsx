@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Viewer from "@/pages/Viewer";
 import Scans from "@/pages/Scans";
+import Patients from "@/pages/Patients";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
@@ -21,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Viewer} />
       <Route path="/scans" component={Scans} />
+      <Route path="/patients" component={Patients} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

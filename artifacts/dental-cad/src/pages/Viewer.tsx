@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useViewerStore } from "@/store/viewerStore";
 import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import { useMovementStore } from "@/modules/movement/movementStore";
@@ -26,6 +27,21 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function NavLinkBtn({ to, children }: { to: string; children: React.ReactNode }) {
+  const [, navigate] = useLocation();
+  return (
+    <button
+      onClick={() => navigate(to)}
+      className="text-[11px] px-2 py-0.5 rounded transition-colors"
+      style={{ color: "#4a6070" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#00e5ff"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.06)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#4a6070"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+    >
+      {children}
+    </button>
+  );
 }
 
 function formatNum(n: number) {
@@ -176,6 +192,9 @@ export default function Viewer() {
               {menu}
             </button>
           ))}
+          <div style={{ width: 1, height: 14, background: "#1e2530", margin: "0 2px" }} />
+          <NavLinkBtn to="/patients">Patients</NavLinkBtn>
+          <NavLinkBtn to="/scans">Library</NavLinkBtn>
         </div>
 
         <div className="flex items-center gap-3">

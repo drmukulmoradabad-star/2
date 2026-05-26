@@ -101,6 +101,13 @@ export default function Scans() {
             onBlur={(e) => ((e.target as HTMLInputElement).style.borderColor = "#1e2530")}
           />
           <button
+            onClick={() => navigate("/patients")}
+            className="text-[11px] px-3 py-1.5 rounded transition-all"
+            style={{ background: "#13161d", border: "1px solid #1e2530", color: "#7fa8c0" }}
+          >
+            Patients
+          </button>
+          <button
             onClick={() => navigate("/")}
             className="text-[11px] px-3 py-1.5 rounded transition-all"
             style={{ background: "rgba(0,229,255,0.1)", border: "1px solid rgba(0,229,255,0.3)", color: "#00e5ff" }}
