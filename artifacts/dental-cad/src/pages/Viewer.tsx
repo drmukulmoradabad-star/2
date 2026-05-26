@@ -15,6 +15,8 @@ import SegmentationPanel from "@/modules/segmentation/SegmentationPanel";
 import MovementPanel from "@/modules/movement/MovementPanel";
 import TreatmentPanel from "@/modules/simulation/TreatmentPanel";
 import AnalysisPanel from "@/modules/analysis/AnalysisPanel";
+import ExportPanel from "@/modules/export/ExportPanel";
+import AIPanel from "@/modules/ai/AIPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -338,7 +340,7 @@ export default function Viewer() {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <TabsList
-              className="shrink-0 rounded-none border-b grid grid-cols-7 h-8 p-0"
+              className="shrink-0 rounded-none border-b grid grid-cols-9 h-8 p-0"
               style={{ background: "#0a0c10", borderColor: "#1e2530" }}
             >
               {[
@@ -349,6 +351,8 @@ export default function Viewer() {
                 { value: "movement", label: "Mov" },
                 { value: "simulation", label: "Sim" },
                 { value: "analysis", label: "Anl" },
+                { value: "export", label: "Exp" },
+                { value: "ai", label: "AI" },
               ].map((tab) => (
                 <TabsTrigger
                   key={tab.value}
@@ -386,6 +390,12 @@ export default function Viewer() {
             </TabsContent>
             <TabsContent value="analysis" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
               <AnalysisPanel />
+            </TabsContent>
+            <TabsContent value="export" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <ExportPanel />
+            </TabsContent>
+            <TabsContent value="ai" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <AIPanel />
             </TabsContent>
           </Tabs>
         </div>
