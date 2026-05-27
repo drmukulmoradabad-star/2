@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 
-export type ToolType = 'orbit' | 'select' | 'measure_distance' | 'measure_angle' | 'annotate' | 'segment' | 'align' | 'section';
+export type ToolType =
+  | 'orbit'
+  | 'select'
+  | 'measure_distance'
+  | 'measure_angle'
+  | 'annotate'
+  | 'segment'
+  | 'align'
+  | 'section'
+  | 'sculpt';
 
 interface ViewerState {
   activeScanId: number | null;

@@ -19,6 +19,8 @@ import AnalysisPanel from "@/modules/analysis/AnalysisPanel";
 import ExportPanel from "@/modules/export/ExportPanel";
 import AIPanel from "@/modules/ai/AIPanel";
 import MeshEditPanel from "@/modules/mesh-edit/MeshEditPanel";
+import SculptPanel from "@/modules/sculpt/SculptPanel";
+import ArchPanel from "@/modules/arch/ArchPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -286,9 +288,9 @@ export default function Viewer() {
         {/* LEFT TOOLBAR */}
         <ToolBar onToolChange={(tool) => {
           setActiveTool(tool);
-          // Auto-switch right panel when selecting segment/align tool
           if (tool === "segment") setActiveTab("segment");
           if (tool === "align") setActiveTab("movement");
+          if (tool === "sculpt") setActiveTab("sculpt");
         }} />
 
         {/* VIEWPORT */}
@@ -360,7 +362,7 @@ export default function Viewer() {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <TabsList
-              className="shrink-0 rounded-none border-b grid grid-cols-10 h-8 p-0"
+              className="shrink-0 rounded-none border-b grid grid-cols-12 h-8 p-0"
               style={{ background: "#0a0c10", borderColor: "#1e2530" }}
             >
               {[
@@ -370,6 +372,8 @@ export default function Viewer() {
                 { value: "segment", label: "Seg" },
                 { value: "movement", label: "Mov" },
                 { value: "simulation", label: "Sim" },
+                { value: "sculpt", label: "Scl" },
+                { value: "arch", label: "Arch" },
                 { value: "mesh-edit", label: "Edit" },
                 { value: "analysis", label: "Anl" },
                 { value: "export", label: "Exp" },
@@ -378,7 +382,7 @@ export default function Viewer() {
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="text-[8px] uppercase tracking-wider rounded-none h-8 data-[state=active]:bg-transparent px-0"
+                  className="text-[7px] uppercase tracking-wide rounded-none h-8 data-[state=active]:bg-transparent px-0"
                   style={{ color: "#4a6070" }}
                 >
                   {tab.label}
@@ -408,6 +412,12 @@ export default function Viewer() {
               <TreatmentPanel
                 onToast={(msg, desc) => toast({ title: msg, description: desc })}
               />
+            </TabsContent>
+            <TabsContent value="sculpt" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <SculptPanel />
+            </TabsContent>
+            <TabsContent value="arch" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
+              <ArchPanel />
             </TabsContent>
             <TabsContent value="mesh-edit" className="flex-1 overflow-y-auto p-0 m-0 flex flex-col">
               <MeshEditPanel />

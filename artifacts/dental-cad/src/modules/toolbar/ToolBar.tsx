@@ -94,6 +94,18 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: React.ReactN
       </svg>
     ),
   },
+  {
+    id: "sculpt",
+    label: "Sculpt / Deform",
+    shortcut: "B",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 1.5" />
+        <circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.6" />
+        <path d="M8 1.5 L8 3M8 13 L8 14.5M1.5 8 L3 8M13 8 L14.5 8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+      </svg>
+    ),
+  },
 ];
 
 interface ToolBarProps {

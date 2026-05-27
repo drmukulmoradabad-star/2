@@ -4,7 +4,9 @@ import { OrbitControls, PerspectiveCamera, GizmoHelper, GizmoViewport } from "@r
 import { useViewerStore } from "@/store/viewerStore";
 import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import { useSimulationStore } from "@/modules/simulation/simulationStore";
+import { useSculptStore } from "@/modules/sculpt/sculptStore";
 import ScanMesh from "./ScanMesh";
+import SculptableMesh from "@/modules/sculpt/SculptableMesh";
 import ViewControls from "./ViewControls";
 import DropZone from "./DropZone";
 import SegmentedScene from "@/modules/segmentation/SegmentedScene";
@@ -53,12 +55,15 @@ function EmptyScene() {
 }
 
 function Scene() {
-  const geometry = useViewerStore((s) => s.geometry);
+  const geometry     = useViewerStore((s) => s.geometry);
   const materialMode = useViewerStore((s) => s.materialMode);
-  const opacity = useViewerStore((s) => s.opacity);
+  const opacity      = useViewerStore((s) => s.opacity);
+  const activeTool   = useViewerStore((s) => s.activeTool);
   const showSegmented = useSegmentationStore((s) => s.showSegmented);
-  const hasSegments = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
+  const hasSegments   = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
   const showSimulation = useSimulationStore((s) => s.showSimulation);
+
+  const isSculptMode = activeTool === "sculpt";
 
   // Hide raw mesh when segmented or simulation view is active
   const showRaw = geometry && (!showSegmented || !hasSegments) && !showSimulation;
@@ -70,9 +75,17 @@ function Scene() {
       <directionalLight position={[-4, 2, -2]} intensity={0.4} color="#c8d8f0" />
       <pointLight position={[0, -3, 4]} intensity={0.6} color="#fff0d0" />
 
-      {/* Raw scan mesh */}
+      {/* Raw scan mesh — SculptableMesh when sculpt mode active, ScanMesh otherwise */}
       {showRaw && (
-        <ScanMesh geometry={geometry} materialMode={materialMode} opacity={opacity} />
+        isSculptMode ? (
+          <SculptableMesh
+            geometry={geometry}
+            materialMode={materialMode}
+            opacity={opacity}
+          />
+        ) : (
+          <ScanMesh geometry={geometry} materialMode={materialMode} opacity={opacity} />
+        )
       )}
 
       {/* Segmented tooth meshes (hidden during simulation) */}
@@ -150,10 +163,11 @@ interface ViewportCanvasProps {
 export default function ViewportCanvas({ onFileLoad }: ViewportCanvasProps) {
   const controlsRef = useRef<any>(null);
   const [webGLFailed, setWebGLFailed] = useState(() => !checkWebGL());
-  const activeTool = useViewerStore((s) => s.activeTool);
+  const activeTool   = useViewerStore((s) => s.activeTool);
+  const isSculpting  = useSculptStore((s) => s.isSculpting);
 
-  // Disable orbit when movement gizmo needs mouse
-  const orbitEnabled = activeTool !== "align";
+  // Disable orbit when using sculpt tool or movement gizmo
+  const orbitEnabled = activeTool !== "align" && activeTool !== "sculpt";
 
   return (
     <div className="relative w-full h-full" style={{ background: "#0a0c10" }}>
@@ -171,6 +185,7 @@ export default function ViewportCanvas({ onFileLoad }: ViewportCanvasProps) {
             }}
             dpr={[1, 2]}
             shadows
+            frameloop="demand"
             style={{ background: "#0a0c10" }}
             onCreated={({ gl }) => {
               if (!gl.getContext()) setWebGLFailed(true);
@@ -195,6 +210,20 @@ export default function ViewportCanvas({ onFileLoad }: ViewportCanvasProps) {
           </Canvas>
           <ViewControls controlsRef={controlsRef} />
           <DropZone onFileLoad={onFileLoad} />
+
+          {/* Sculpt mode indicator */}
+          {activeTool === "sculpt" && (
+            <div
+              className="absolute top-2 left-2 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider pointer-events-none"
+              style={{
+                background: isSculpting ? "rgba(255,153,64,0.15)" : "rgba(0,229,255,0.1)",
+                border: `1px solid ${isSculpting ? "rgba(255,153,64,0.4)" : "rgba(0,229,255,0.3)"}`,
+                color: isSculpting ? "#ff9940" : "#00e5ff",
+              }}
+            >
+              {isSculpting ? "Sculpting…" : "Sculpt Mode — LMB to deform"}
+            </div>
+          )}
         </WebGLErrorBoundary>
       )}
     </div>
