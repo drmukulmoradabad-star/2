@@ -220,7 +220,7 @@ export function encodePLY(geometry: THREE.BufferGeometry, binary = true): ArrayB
 // ─── Mesh Validation ─────────────────────────────────────────────────────────
 
 export function validateMesh(geometry: THREE.BufferGeometry): ValidationResult {
-  const geo = geometry.clone();
+  let geo = geometry.clone();
   if (!geo.index) geo = geo.toNonIndexed() as THREE.BufferGeometry;
   geo.computeVertexNormals();
   geo.computeBoundingBox();
