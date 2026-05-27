@@ -6,9 +6,11 @@ import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import { useSimulationStore } from "@/modules/simulation/simulationStore";
 import { useSculptStore } from "@/modules/sculpt/sculptStore";
 import { useArchEditStore } from "@/modules/arch/archEditStore";
+import { useAIStore } from "@/modules/ai/aiStore";
 import ScanMesh from "./ScanMesh";
 import SculptableMesh from "@/modules/sculpt/SculptableMesh";
 import ArchCurveOverlay from "@/modules/arch/ArchCurveOverlay";
+import AIOverlay from "@/modules/ai/AIOverlay";
 import ViewControls from "./ViewControls";
 import DropZone from "./DropZone";
 import SegmentedScene from "@/modules/segmentation/SegmentedScene";
@@ -66,6 +68,10 @@ function Scene() {
   const showSimulation = useSimulationStore((s) => s.showSimulation);
   const archShowCurve  = useArchEditStore((s) => s.showCurve);
   const archCPs        = useArchEditStore((s) => s.controlPoints);
+  const aiHasOverlay   = useAIStore((s) =>
+    s.showMovementArrows || s.showCollisionHeatmap || s.showSymmetryGuide ||
+    s.showMidlineGuide || s.showIdealArch || s.showLandmarks
+  );
 
   const isSculptMode = activeTool === "sculpt";
   const showArchOverlay = isSculptMode && archShowCurve && archCPs.length > 0;
@@ -95,6 +101,9 @@ function Scene() {
 
       {/* Interactive arch curve overlay with draggable control points */}
       {showArchOverlay && <ArchCurveOverlay />}
+
+      {/* AI recommendation overlays (movement arrows, heatmap, guides) */}
+      {aiHasOverlay && <AIOverlay />}
 
       {/* Segmented tooth meshes (hidden during simulation) */}
       {!showSimulation && <SegmentedScene />}
