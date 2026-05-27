@@ -141,7 +141,7 @@ export interface BrushParams {
 export type SculptTool =
   | "grab" | "smooth" | "inflate" | "deflate"
   | "flatten" | "relax" | "pinch" | "push" | "pull"
-  | "crease" | "clay" | "mask_paint" | "mask_erase";
+  | "crease" | "clay" | "surface" | "mask_paint" | "mask_erase";
 
 // ─── Common helpers ───────────────────────────────────────────────────────────
 
@@ -453,6 +453,60 @@ export function applyClay(
   }
 }
 
+/**
+ * Surface slide — moves vertices along the surface tangent plane.
+ * The stroke delta is projected onto each vertex's tangent plane (removing
+ * the normal component) so vertices slide across the mesh surface without
+ * pushing through it. Produces a smear / surface-drag effect.
+ */
+export function applySurface(
+  positions: Float32Array,
+  normals: Float32Array | null,
+  grid: SpatialGrid,
+  center: THREE.Vector3,
+  delta: THREE.Vector3,
+  p: BrushParams
+): void {
+  for (const { index: i, weight: w } of affected(positions, grid, center, p)) {
+    let tx = delta.x, ty = delta.y, tz = delta.z;
+
+    if (normals) {
+      // Project delta onto tangent plane: remove component along normal
+      const nx = normals[i * 3];
+      const ny = normals[i * 3 + 1];
+      const nz = normals[i * 3 + 2];
+      const dot = tx * nx + ty * ny + tz * nz;
+      tx -= dot * nx;
+      ty -= dot * ny;
+      tz -= dot * nz;
+    }
+
+    positions[i * 3]     += tx * w;
+    positions[i * 3 + 1] += ty * w;
+    positions[i * 3 + 2] += tz * w;
+
+    if (p.basePositions && p.maxDisplacement != null) applyConstraint(positions, p.basePositions, i, p.maxDisplacement);
+  }
+
+  // Symmetry
+  if (p.symmetry) {
+    const sc = mirrorPoint(center, p.symmetryAxis!);
+    const sd = mirrorDelta(delta, p.symmetryAxis!);
+    for (const { index: i, weight: w } of affected(positions, grid, sc, { ...p, symmetry: false })) {
+      let tx = sd.x, ty = sd.y, tz = sd.z;
+      if (normals) {
+        const nx = normals[i * 3], ny = normals[i * 3 + 1], nz = normals[i * 3 + 2];
+        const dot = tx * nx + ty * ny + tz * nz;
+        tx -= dot * nx; ty -= dot * ny; tz -= dot * nz;
+      }
+      positions[i * 3]     += tx * w;
+      positions[i * 3 + 1] += ty * w;
+      positions[i * 3 + 2] += tz * w;
+      if (p.basePositions && p.maxDisplacement != null) applyConstraint(positions, p.basePositions, i, p.maxDisplacement);
+    }
+  }
+}
+
 /** Paint / erase mask weights */
 export function applyMaskPaint(
   maskWeights: Float32Array,
@@ -566,6 +620,7 @@ export class SculptEngine {
       case "pull":        applyPushPull(pos, nor, grid, hitPoint, hitNormal, 1, p); break;
       case "crease":      applyCrease(pos, nor, grid, hitPoint, hitNormal, p, adj); break;
       case "clay":        applyClay(pos, nor, grid, hitPoint, hitNormal, p); break;
+      case "surface":     applySurface(pos, nor, grid, hitPoint, delta, p); break;
     }
 
     this._geo.attributes.position.needsUpdate = true;

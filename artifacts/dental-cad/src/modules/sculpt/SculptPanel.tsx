@@ -136,6 +136,10 @@ const TOOLS: { id: SculptTool; label: string; desc: string; key: string; icon: R
     id: "clay", label: "Clay", key: "Y", desc: "Build-up with implicit flattening",
     icon: <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4"><ellipse cx="8" cy="10" rx="5" ry="3" stroke="currentColor" strokeWidth="1.5"/><path d="M3 10 Q8 4 13 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
   },
+  {
+    id: "surface", label: "Surface", key: "V", desc: "Surface slide — drag vertices along mesh tangent",
+    icon: <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4"><path d="M2 6 Q5 4 8 6 Q11 8 14 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M6 9 L10 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/><path d="M8 7 L10 9 L8 11" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.8"/></svg>,
+  },
 ];
 
 const FALLOFF_OPTIONS: { id: FalloffCurve; label: string }[] = [

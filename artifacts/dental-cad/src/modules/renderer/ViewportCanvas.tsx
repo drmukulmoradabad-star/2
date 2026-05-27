@@ -5,8 +5,10 @@ import { useViewerStore } from "@/store/viewerStore";
 import { useSegmentationStore } from "@/modules/segmentation/segmentationStore";
 import { useSimulationStore } from "@/modules/simulation/simulationStore";
 import { useSculptStore } from "@/modules/sculpt/sculptStore";
+import { useArchEditStore } from "@/modules/arch/archEditStore";
 import ScanMesh from "./ScanMesh";
 import SculptableMesh from "@/modules/sculpt/SculptableMesh";
+import ArchCurveOverlay from "@/modules/arch/ArchCurveOverlay";
 import ViewControls from "./ViewControls";
 import DropZone from "./DropZone";
 import SegmentedScene from "@/modules/segmentation/SegmentedScene";
@@ -59,11 +61,14 @@ function Scene() {
   const materialMode = useViewerStore((s) => s.materialMode);
   const opacity      = useViewerStore((s) => s.opacity);
   const activeTool   = useViewerStore((s) => s.activeTool);
-  const showSegmented = useSegmentationStore((s) => s.showSegmented);
-  const hasSegments   = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
+  const showSegmented  = useSegmentationStore((s) => s.showSegmented);
+  const hasSegments    = useSegmentationStore((s) => (s.result?.segments.length ?? 0) > 0);
   const showSimulation = useSimulationStore((s) => s.showSimulation);
+  const archShowCurve  = useArchEditStore((s) => s.showCurve);
+  const archCPs        = useArchEditStore((s) => s.controlPoints);
 
   const isSculptMode = activeTool === "sculpt";
+  const showArchOverlay = isSculptMode && archShowCurve && archCPs.length > 0;
 
   // Hide raw mesh when segmented or simulation view is active
   const showRaw = geometry && (!showSegmented || !hasSegments) && !showSimulation;
@@ -87,6 +92,9 @@ function Scene() {
           <ScanMesh geometry={geometry} materialMode={materialMode} opacity={opacity} />
         )
       )}
+
+      {/* Interactive arch curve overlay with draggable control points */}
+      {showArchOverlay && <ArchCurveOverlay />}
 
       {/* Segmented tooth meshes (hidden during simulation) */}
       {!showSimulation && <SegmentedScene />}
